@@ -16,6 +16,28 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class MonitorServiceTest {
 
     @Test
+    void notifiesAlertChannelWhenServerIsUnreachable() {
+        QueueHostChecker checker = new QueueHostChecker(false);
+        MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
+        RecordingNotifier notifier = new RecordingNotifier();
+
+        MonitorConfig config = MonitorConfig.of(
+                "jcswebt11.ftn.fedex.com",
+                443,
+                1000,
+                30,
+                1,
+                15
+        );
+
+        MonitorService service = new MonitorService(checker, config, clock, notifier);
+        service.runCheck();
+
+        assertEquals(1, notifier.notifications);
+        assertEquals("Host jcswebt11.ftn.fedex.com:443 appears to be down.", notifier.lastMessage);
+    }
+
+    @Test
     void emitsAlertWhenServerIsUnreachable() throws Exception {
         QueueHostChecker checker = new QueueHostChecker(false);
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
@@ -154,6 +176,17 @@ class MonitorServiceTest {
         @Override
         public Instant instant() {
             return now;
+        }
+    }
+
+    private static class RecordingNotifier implements AlertNotifier {
+        private int notifications;
+        private String lastMessage;
+
+        @Override
+        public void notifyAlert(String message) {
+            notifications++;
+            lastMessage = message;
         }
     }
 }

@@ -1,44 +1,64 @@
 # Host Monitor
 
-Monitors `jcswebt11.ftn.fedex.com` and prints an alert message to the console when the host is considered down.
+`jupiterhost-monitor` is a Java 17 service that probes a TCP host on a fixed interval and emits alerts when the host appears down.
 
-## Behavior
+## Current behavior
 
-- Checks TCP connectivity on a configured host/port every interval.
-- Triggers an alert after N consecutive failures.
-- Applies an alert cooldown to avoid repeated alert spam.
-- Uses console logging for alert delivery.
-- Invalid numeric config values fall back to safe defaults.
+- Connectivity is checked with a TCP socket connect (`TcpHostChecker`).
+- A host-down alert is emitted only after `MONITOR_FAILURES_BEFORE_ALERT` consecutive failures.
+- After an alert is sent, additional alerts are suppressed for `MONITOR_ALERT_COOLDOWN_MINUTES`.
+- Console alerting is always enabled.
+- SMTP email alerting is optional and enabled only when all required SMTP credentials/addresses are present.
+- When SMTP is enabled, alerts are sent through a composite notifier so console alerts still run even if email sending fails.
 
-## Configuration (Environment Variables)
+## Environment variables
 
-- `MONITOR_HOST` (default: `jcswebt11.ftn.fedex.com`)
-- `MONITOR_PORT` (default: `443`)
-- `MONITOR_TIMEOUT_MILLIS` (default: `3000`)
-- `MONITOR_INTERVAL_SECONDS` (default: `30`)
-- `MONITOR_FAILURES_BEFORE_ALERT` (default: `3`)
-- `MONITOR_ALERT_COOLDOWN_MINUTES` (default: `15`)
+### Monitoring settings
 
-## Run
+| Variable | Default |
+|---|---|
+| `MONITOR_HOST` | `jcswebt110.ftn.fedex.com` |
+| `MONITOR_PORT` | `443` |
+| `MONITOR_TIMEOUT_MILLIS` | `3000` |
+| `MONITOR_INTERVAL_SECONDS` | `30` |
+| `MONITOR_FAILURES_BEFORE_ALERT` | `3` |
+| `MONITOR_ALERT_COOLDOWN_MINUTES` | `15` |
 
-### One-command launcher (Windows)
+Invalid values fall back to safe defaults; minimum bounds are enforced for timeout, interval, failures-before-alert, and cooldown.
 
-```powershell
-.\run-monitor.ps1
-```
+### SMTP settings (optional)
 
-```bat
-run-monitor.cmd
-```
+| Variable | Default / rule |
+|---|---|
+| `MONITOR_SMTP_HOST` | `smtp.gmail.com` |
+| `MONITOR_SMTP_PORT` | `587` |
+| `MONITOR_SMTP_STARTTLS` | `true` |
+| `MONITOR_SMTP_USERNAME` | required to enable SMTP |
+| `MONITOR_SMTP_PASSWORD` | required to enable SMTP |
+| `MONITOR_SMTP_FROM` | required to enable SMTP |
+| `MONITOR_SMTP_TO` | required to enable SMTP |
 
-Use `-SkipBuild` in PowerShell if you already built the project.
+`smtpEnabled()` requires all four credential/address values: username, password, from, and to.
 
-### Manual run
+## Build and test
 
 ```powershell
 mvn test
 mvn package
+```
+
+## Run
+
+After packaging, run the shaded jar:
+
+```powershell
+java -jar target\jupiterhost-monitor-1.0.jar
+```
+
+Alternative (classes only):
+
+```powershell
 java -cp target\classes com.fedex.jupiter.MonitorJupiterHostServer
 ```
 
-> Alerts are written to console output.
+At startup the app prints whether SMTP alerting is enabled. Alerts are always printed to console as `[ALERT] ...`.

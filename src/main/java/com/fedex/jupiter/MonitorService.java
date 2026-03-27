@@ -7,14 +7,20 @@ public class MonitorService {
     private final HostChecker hostChecker;
     private final MonitorConfig config;
     private final Clock clock;
+    private final AlertNotifier alertNotifier;
 
     private int consecutiveFailures;
     private Instant lastAlertAt;
 
     public MonitorService(HostChecker hostChecker, MonitorConfig config, Clock clock) {
+        this(hostChecker, config, clock, new ConsoleAlertNotifier());
+    }
+
+    public MonitorService(HostChecker hostChecker, MonitorConfig config, Clock clock, AlertNotifier alertNotifier) {
         this.hostChecker = hostChecker;
         this.config = config;
         this.clock = clock;
+        this.alertNotifier = alertNotifier;
     }
 
     public void runCheck() {
@@ -53,7 +59,7 @@ public class MonitorService {
         }
 
         String message = String.format("Host %s:%d appears to be down.", config.host(), config.port());
-        System.out.printf("[ALERT] %s%n", message);
+        alertNotifier.notifyAlert(message);
         lastAlertAt = Instant.now(clock);
     }
 

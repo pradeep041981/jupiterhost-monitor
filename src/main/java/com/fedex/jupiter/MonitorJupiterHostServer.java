@@ -10,7 +10,19 @@ public class MonitorJupiterHostServer {
         MonitorConfig config = MonitorConfig.fromEnv();
 
         HostChecker checker = new TcpHostChecker(config.host(), config.port(), config.connectionTimeoutMillis());
-        MonitorService monitorService = new MonitorService(checker, config, Clock.systemUTC());
+        AlertNotifier notifier = new ConsoleAlertNotifier();
+        if (config.smtpEnabled()) {
+            notifier = new CompositeAlertNotifier(notifier, new SmtpEmailAlertNotifier(config));
+            System.out.printf(
+                    "SMTP alerting enabled via %s:%d (STARTTLS=%s).%n",
+                    config.smtpHost(),
+                    config.smtpPort(),
+                    config.smtpStartTls());
+        } else {
+            System.out.println("SMTP alerting disabled: set MONITOR_SMTP_* env vars to enable email alerts.");
+        }
+
+        MonitorService monitorService = new MonitorService(checker, config, Clock.systemUTC(), notifier);
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
