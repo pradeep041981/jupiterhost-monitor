@@ -7,7 +7,7 @@ public final class MonitorConfig {
     private static final int DEFAULT_TIMEOUT_MILLIS = 3000;
     private static final int DEFAULT_INTERVAL_SECONDS = 30;
     private static final int DEFAULT_FAILURES_BEFORE_ALERT = 3;
-    private static final int DEFAULT_COOLDOWN_MINUTES = 15;
+    private static final int DEFAULT_COOLDOWN_MINUTES = 1; // 15
     private static final String DEFAULT_SMTP_HOST = "smtp.gmail.com";
     private static final int DEFAULT_SMTP_PORT = 587;
     private static final boolean DEFAULT_SMTP_STARTTLS = true;
@@ -66,10 +66,10 @@ public final class MonitorConfig {
                 readString("MONITOR_SMTP_HOST", DEFAULT_SMTP_HOST),
                 readInt("MONITOR_SMTP_PORT", DEFAULT_SMTP_PORT),
                 readBoolean("MONITOR_SMTP_STARTTLS", DEFAULT_SMTP_STARTTLS),
-                readString("MONITOR_SMTP_USERNAME", ""),
-                readString("MONITOR_SMTP_PASSWORD", ""),
-                readString("MONITOR_SMTP_FROM", ""),
-                readString("MONITOR_SMTP_TO", "")
+                readString("MONITOR_SMTP_USERNAME", "pradeepbr2003@gmail.com"),
+                readString("MONITOR_SMTP_PASSWORD", "lugl ekbi jdrh rswy"),
+                readString("MONITOR_SMTP_FROM", "jupiter_email_alert@fedex.com"),
+                readString("MONITOR_SMTP_TO", "pradeep.ramaiah.osv@fedex.com")
         );
     }
 
