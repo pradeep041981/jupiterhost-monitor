@@ -1,7 +1,10 @@
 package com.fedex.jupiter.config;
 
+import java.util.*;
+import java.util.stream.Collectors;
+
 public final class MonitorConfig {
-    private static final String DEFAULT_HOST = "jcswebt110.ftn.fedex.com";
+    private static final String DEFAULT_HOST = "jcswebt110.ftn.fedex.com,jcswebt111.ftn.fedex.com,jcswebt112.ftn.fedex.com";
 
     private static final int DEFAULT_PORT = 443;
     private static final int DEFAULT_TIMEOUT_MILLIS = 3000;
@@ -12,7 +15,7 @@ public final class MonitorConfig {
     private static final int DEFAULT_SMTP_PORT = 587;
     private static final boolean DEFAULT_SMTP_STARTTLS = true;
 
-    private final String host;
+    private final List<String> hosts;
     private final int port;
     private final int connectionTimeoutMillis;
     private final int checkIntervalSeconds;
@@ -27,7 +30,7 @@ public final class MonitorConfig {
     private final String smtpTo;
 
     private MonitorConfig(
-            String host,
+            List<String> hosts,
             int port,
             int connectionTimeoutMillis,
             int checkIntervalSeconds,
@@ -40,7 +43,9 @@ public final class MonitorConfig {
             String smtpPassword,
             String smtpFrom,
             String smtpTo) {
-        this.host = isBlank(host) ? DEFAULT_HOST : host.trim();
+        this.hosts = hosts.stream()
+                .map(h -> isBlank(h) ? DEFAULT_HOST.split(",")[0].trim() : h.trim())
+                .collect(Collectors.toList());
         this.port = normalizePort(port);
         this.connectionTimeoutMillis = normalizeMin(connectionTimeoutMillis, 100, DEFAULT_TIMEOUT_MILLIS);
         this.checkIntervalSeconds = normalizeMin(checkIntervalSeconds, 1, DEFAULT_INTERVAL_SECONDS);
@@ -56,8 +61,12 @@ public final class MonitorConfig {
     }
 
     public static MonitorConfig fromEnv() {
+        List<String> hosts = Arrays.stream(readString("MONITOR_HOST", DEFAULT_HOST).split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
         return new MonitorConfig(
-                readString("MONITOR_HOST", DEFAULT_HOST),
+                hosts,
                 readInt("MONITOR_PORT", DEFAULT_PORT),
                 readInt("MONITOR_TIMEOUT_MILLIS", DEFAULT_TIMEOUT_MILLIS),
                 readInt("MONITOR_INTERVAL_SECONDS", DEFAULT_INTERVAL_SECONDS),
@@ -81,7 +90,30 @@ public final class MonitorConfig {
             int failuresBeforeAlert,
             int alertCooldownMinutes) {
         return new MonitorConfig(
-                host,
+                List.of(host),
+                port,
+                connectionTimeoutMillis,
+                checkIntervalSeconds,
+                failuresBeforeAlert,
+                alertCooldownMinutes,
+                DEFAULT_SMTP_HOST,
+                DEFAULT_SMTP_PORT,
+                DEFAULT_SMTP_STARTTLS,
+                "",
+                "",
+                "",
+                "");
+    }
+
+    public static MonitorConfig of(
+            List<String> hosts,
+            int port,
+            int connectionTimeoutMillis,
+            int checkIntervalSeconds,
+            int failuresBeforeAlert,
+            int alertCooldownMinutes) {
+        return new MonitorConfig(
+                hosts,
                 port,
                 connectionTimeoutMillis,
                 checkIntervalSeconds,
@@ -111,7 +143,7 @@ public final class MonitorConfig {
             String smtpFrom,
             String smtpTo) {
         return new MonitorConfig(
-                host,
+                List.of(host),
                 port,
                 connectionTimeoutMillis,
                 checkIntervalSeconds,
@@ -171,8 +203,12 @@ public final class MonitorConfig {
         return isBlank(value) ? "" : value.trim();
     }
 
+    public List<String> hosts() {
+        return Collections.unmodifiableList(hosts);
+    }
+
     public String host() {
-        return host;
+        return hosts.isEmpty() ? "" : hosts.get(0);
     }
 
     public int port() {

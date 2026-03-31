@@ -3,6 +3,7 @@ package com.fedex.jupiter.service;
 import com.fedex.jupiter.alert.AlertNotifier;
 import com.fedex.jupiter.config.MonitorConfig;
 import com.fedex.jupiter.validate.HostChecker;
+import com.fedex.jupiter.validate.HostCheckerFactory;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -10,6 +11,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayDeque;
+import java.util.Map;
 import java.util.Queue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +35,7 @@ class MonitorServiceTest {
                 15
         );
 
-        MonitorService service = new MonitorService(checker, config, clock, notifier);
+        MonitorService service = new MonitorService(config, clock, notifier, (h, p, t) -> checker);
         service.runCheck();
 
         assertEquals(1, notifier.notifications);
@@ -54,7 +56,7 @@ class MonitorServiceTest {
                 15
         );
 
-        MonitorService service = new MonitorService(checker, config, clock);
+        MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
         service.runCheck();
 
         assertNotNull(readLastAlertAt(service), "Expected alert timestamp when server is unreachable");
@@ -74,7 +76,7 @@ class MonitorServiceTest {
                 15
         );
 
-        MonitorService service = new MonitorService(checker, config, clock);
+        MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
         service.runCheck();
         service.runCheck();
 
@@ -95,7 +97,7 @@ class MonitorServiceTest {
                 15
         );
 
-        MonitorService service = new MonitorService(checker, config, clock);
+        MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
         service.runCheck();
         service.runCheck();
 
@@ -116,7 +118,7 @@ class MonitorServiceTest {
                 15
         );
 
-        MonitorService service = new MonitorService(checker, config, clock);
+        MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
 
         service.runCheck();
         service.runCheck();
@@ -134,7 +136,9 @@ class MonitorServiceTest {
     private static Instant readLastAlertAt(MonitorService service) throws Exception {
         Field field = MonitorService.class.getDeclaredField("lastAlertAt");
         field.setAccessible(true);
-        return (Instant) field.get(service);
+        @SuppressWarnings("unchecked")
+        Map<String, Instant> map = (Map<String, Instant>) field.get(service);
+        return map.values().stream().findFirst().orElse(null);
     }
 
     private static class QueueHostChecker implements HostChecker {

@@ -32,7 +32,7 @@ public class SmtpEmailAlertNotifier implements AlertNotifier {
             Message email = new MimeMessage(session);
             email.setFrom(new InternetAddress(config.smtpFrom()));
             email.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.smtpTo()));
-            email.setSubject(String.format("[JupiterHostMonitor] Host Down: %s:%d", config.host(), config.port()));
+            email.setSubject("[JupiterHostMonitor] Host Down Alert");
             email.setText(message);
 
             Transport.send(email);
@@ -51,4 +51,3 @@ public class SmtpEmailAlertNotifier implements AlertNotifier {
         return props;
     }
 }
-
