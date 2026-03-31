@@ -1,9 +1,9 @@
 package com.fedex.jupiter.service;
 
-import com.fedex.jupiter.validate.HostChecker;
 import com.fedex.jupiter.alert.AlertNotifier;
-import com.fedex.jupiter.alert.ConsoleAlertNotifier;
+import com.fedex.jupiter.alert.smtp.SmtpEmailAlertNotifier;
 import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.validate.HostChecker;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -18,7 +18,7 @@ public class MonitorService {
     private Instant lastAlertAt;
 
     public MonitorService(HostChecker hostChecker, MonitorConfig config, Clock clock) {
-        this(hostChecker, config, clock, new ConsoleAlertNotifier());
+        this(hostChecker, config, clock, new SmtpEmailAlertNotifier(config));
     }
 
     public MonitorService(HostChecker hostChecker, MonitorConfig config, Clock clock, AlertNotifier alertNotifier) {

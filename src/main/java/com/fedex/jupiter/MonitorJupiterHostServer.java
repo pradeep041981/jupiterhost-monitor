@@ -1,8 +1,6 @@
 package com.fedex.jupiter;
 
 import com.fedex.jupiter.alert.AlertNotifier;
-import com.fedex.jupiter.alert.CompositeAlertNotifier;
-import com.fedex.jupiter.alert.ConsoleAlertNotifier;
 import com.fedex.jupiter.alert.smtp.SmtpEmailAlertNotifier;
 import com.fedex.jupiter.config.MonitorConfig;
 import com.fedex.jupiter.service.MonitorService;
@@ -19,9 +17,8 @@ public class MonitorJupiterHostServer {
         MonitorConfig config = MonitorConfig.fromEnv();
 
         HostChecker checker = new TcpHostChecker(config.host(), config.port(), config.connectionTimeoutMillis());
-        AlertNotifier notifier = new ConsoleAlertNotifier();
+        AlertNotifier notifier = new SmtpEmailAlertNotifier(config);
         if (config.smtpEnabled()) {
-            notifier = new CompositeAlertNotifier(notifier, new SmtpEmailAlertNotifier(config));
             System.out.printf(
                     "SMTP alerting enabled via %s:%d (STARTTLS=%s).%n",
                     config.smtpHost(),
