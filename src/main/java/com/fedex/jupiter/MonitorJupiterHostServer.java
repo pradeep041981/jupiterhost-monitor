@@ -1,5 +1,14 @@
 package com.fedex.jupiter;
 
+import com.fedex.jupiter.alert.AlertNotifier;
+import com.fedex.jupiter.alert.CompositeAlertNotifier;
+import com.fedex.jupiter.alert.ConsoleAlertNotifier;
+import com.fedex.jupiter.alert.smtp.SmtpEmailAlertNotifier;
+import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.service.MonitorService;
+import com.fedex.jupiter.validate.HostChecker;
+import com.fedex.jupiter.validate.TcpHostChecker;
+
 import java.time.Clock;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;

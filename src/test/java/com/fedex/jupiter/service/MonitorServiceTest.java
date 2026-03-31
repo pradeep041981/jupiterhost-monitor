@@ -1,5 +1,8 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.service;
 
+import com.fedex.jupiter.alert.AlertNotifier;
+import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.validate.HostChecker;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;

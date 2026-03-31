@@ -1,5 +1,7 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.alert.smtp;
 
+import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.alert.AlertNotifier;
 import jakarta.mail.Authenticator;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;

@@ -1,5 +1,8 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.alert;
 
+import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.service.MonitorService;
+import com.fedex.jupiter.validate.HostChecker;
 import org.junit.jupiter.api.Test;
 
 import java.time.Clock;

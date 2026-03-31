@@ -1,4 +1,4 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.validate;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

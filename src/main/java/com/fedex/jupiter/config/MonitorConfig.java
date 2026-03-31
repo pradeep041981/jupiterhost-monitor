@@ -1,4 +1,4 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.config;
 
 public final class MonitorConfig {
     private static final String DEFAULT_HOST = "jcswebt110.ftn.fedex.com";

@@ -1,4 +1,4 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.alert;
 
 public class ConsoleAlertNotifier implements AlertNotifier {
     @Override

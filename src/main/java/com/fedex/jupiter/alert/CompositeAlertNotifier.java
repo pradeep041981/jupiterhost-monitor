@@ -1,4 +1,4 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.alert;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.fedex.jupiter;
+package com.fedex.jupiter.config;
 
 import org.junit.jupiter.api.Test;
 
