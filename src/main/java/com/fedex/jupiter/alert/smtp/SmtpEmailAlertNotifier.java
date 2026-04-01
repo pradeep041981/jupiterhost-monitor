@@ -1,17 +1,18 @@
 package com.fedex.jupiter.alert.smtp;
 
 import com.fedex.jupiter.alert.AlertNotifier;
-import com.fedex.jupiter.config.MonitorConfig;
-import jakarta.mail.*;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
-
-import java.util.Properties;
+import com.fedex.jupiter.config.MonitorProperties;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 
 public class SmtpEmailAlertNotifier implements AlertNotifier {
-    private final MonitorConfig config;
+    private final MonitorProperties config;
 
-    public SmtpEmailAlertNotifier(MonitorConfig config) {
+    @Autowired
+    private JavaMailSender sender;
+
+    public SmtpEmailAlertNotifier(MonitorProperties config) {
         this.config = config;
     }
 
@@ -22,32 +23,16 @@ public class SmtpEmailAlertNotifier implements AlertNotifier {
         }
 
         try {
-            Session session = Session.getInstance(buildProperties(), new Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(config.smtpUsername(), config.smtpPassword());
-                }
-            });
+            SimpleMailMessage mail = new SimpleMailMessage();
+            mail.setFrom(config.smtpFrom());
+            mail.setTo(config.smtpTo().split(","));
+            mail.setSubject("Alert : Jupiter Web Application Server Down!");
+            mail.setText(message);
+            sender.send(mail);
 
-            Message email = new MimeMessage(session);
-            email.setFrom(new InternetAddress(config.smtpFrom()));
-            email.setRecipients(Message.RecipientType.TO, InternetAddress.parse(config.smtpTo()));
-            email.setSubject("[JupiterHostMonitor] Host Down Alert");
-            email.setText(message);
-
-            Transport.send(email);
             System.out.printf("Email alert sent to %s%n", config.smtpTo());
-        } catch (MessagingException ex) {
+        } catch (Exception ex) {
             throw new IllegalStateException("Failed to send SMTP email alert", ex);
         }
-    }
-
-    private Properties buildProperties() {
-        Properties props = new Properties();
-        props.put("mail.smtp.host", config.smtpHost());
-        props.put("mail.smtp.port", String.valueOf(config.smtpPort()));
-        props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", Boolean.toString(config.smtpStartTls()));
-        return props;
     }
 }

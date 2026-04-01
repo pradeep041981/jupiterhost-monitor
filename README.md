@@ -1,10 +1,10 @@
 # Jupiter Host Monitor
 
-Java 17 service that checks TCP reachability for one or more hosts and sends alert notifications when a host is considered down.
+Spring Boot 3 (Java 17) service that checks TCP reachability for one or more hosts and sends alert notifications when a host is considered down.
 
 ## Security Notice
 
-This project currently contains hardcoded fallback SMTP credentials and addresses in `MonitorConfig.fromEnv()` when related environment variables are missing.
+This project currently relies on configuration defaults in `MonitorProperties` for SMTP host/port/TLS when related values are missing.
 
 - Treat this as security debt.
 - Do not use these fallbacks in production.
@@ -24,17 +24,19 @@ This project currently contains hardcoded fallback SMTP credentials and addresse
 ### Main components
 
 - `MonitorJupiterHostServer`
-  - Loads config from environment.
-  - Creates notifier and monitoring service.
-  - Schedules periodic checks using `ScheduledExecutorService`.
-- `MonitorConfig`
-  - Parses and normalizes environment variables.
+  - Spring Boot entry point (`@SpringBootApplication`).
+  - Enables periodic checks using `@EnableScheduling`.
+- `MonitorProperties`
+  - Binds and normalizes monitor configuration values.
   - Exposes typed config values.
   - Decides whether SMTP is enabled via `smtpEnabled()`.
 - `MonitorService`
   - Runs host checks and state transitions.
   - Stores in-memory state per host (`consecutiveFailures`, `lastAlertAt`).
   - Applies threshold and cooldown logic before notifying.
+- `MonitorScheduler`
+  - Spring-managed scheduler (`@Scheduled`) that triggers monitor cycles.
+  - Logs startup/shutdown monitor status.
 - `TcpHostChecker`
   - Performs TCP socket connect probe with timeout.
 - `SmtpEmailAlertNotifier`
@@ -70,7 +72,7 @@ State is in-memory only and resets on process restart.
 
 ## Configuration
 
-Configuration is environment-variable driven (`MonitorConfig.fromEnv()`).
+Configuration is property-driven via Spring Boot binding (`monitor.*`), which can be provided through environment variables.
 
 ### Monitoring variables
 
@@ -90,12 +92,10 @@ Configuration is environment-variable driven (`MonitorConfig.fromEnv()`).
 | `MONITOR_SMTP_HOST` | `smtp.gmail.com` |
 | `MONITOR_SMTP_PORT` | `587` |
 | `MONITOR_SMTP_STARTTLS` | `true` |
-| `MONITOR_SMTP_USERNAME` | Uses fallback value in source if unset |
-| `MONITOR_SMTP_PASSWORD` | Uses fallback value in source if unset |
 | `MONITOR_SMTP_FROM` | Uses fallback value in source if unset |
 | `MONITOR_SMTP_TO` | Uses fallback value in source if unset |
 
-SMTP is enabled only when username, password, from, and to are all non-blank.
+SMTP is enabled only when `MONITOR_SMTP_FROM` and `MONITOR_SMTP_TO` are both non-blank.
 
 ## Build and Run
 
@@ -109,6 +109,12 @@ SMTP is enabled only when username, password, from, and to are all non-blank.
 ```powershell
 mvn test
 mvn package
+```
+
+### Run with Spring Boot plugin
+
+```powershell
+mvn spring-boot:run
 ```
 
 ### Run packaged JAR
@@ -127,7 +133,7 @@ java -jar target\jupiterhost-monitor-1.0.jar
 ### Shutdown
 
 - Stop process with `Ctrl+C` (or process signal).
-- Shutdown hook calls `scheduler.shutdownNow()` and logs `Host monitor stopped.`
+- Spring lifecycle shutdown logs `Host monitor stopped.`
 
 ## Testing
 
@@ -147,14 +153,14 @@ Potential additions:
 
 ## Operational Notes
 
-- Runtime model is a single JVM process.
-- Checks run serially per cycle.
+- Runtime model is a single Spring Boot JVM process.
+- Checks run serially per cycle (single scheduled task).
 - No persistent state; restart resets counters and cooldown memory.
 - Observability is console logs plus SMTP alerts.
 
 ## Known Risks and Next Improvements
 
-1. Remove hardcoded SMTP fallback credentials and enforce secrets-only configuration.
+1. Remove SMTP host/port/TLS source defaults and enforce secrets-only configuration.
 2. Add pluggable notifiers (Webhook/Slack/PagerDuty).
 3. Add structured logging and metrics (`alerts_sent`, `checks_failed`, `cooldown_suppressed`).
 4. Consider state persistence if restart continuity is required.

@@ -1,7 +1,7 @@
 package com.fedex.jupiter.service;
 
 import com.fedex.jupiter.alert.AlertNotifier;
-import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.config.MonitorProperties;
 import com.fedex.jupiter.validate.HostChecker;
 import com.fedex.jupiter.validate.HostCheckerFactory;
 import org.junit.jupiter.api.Test;
@@ -26,14 +26,7 @@ class MonitorServiceTest {
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
         RecordingNotifier notifier = new RecordingNotifier();
 
-        MonitorConfig config = MonitorConfig.of(
-                "jcswebt11.ftn.fedex.com",
-                443,
-                1000,
-                30,
-                1,
-                15
-        );
+        MonitorProperties config = testConfig("jcswebt11.ftn.fedex.com", 1, 15);
 
         MonitorService service = new MonitorService(config, clock, notifier, (h, p, t) -> checker);
         service.runCheck();
@@ -47,14 +40,7 @@ class MonitorServiceTest {
         QueueHostChecker checker = new QueueHostChecker(false);
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
 
-        MonitorConfig config = MonitorConfig.of(
-                "jcswebt11.ftn.fedex.com",
-                443,
-                1000,
-                30,
-                1,
-                15
-        );
+        MonitorProperties config = testConfig("jcswebt11.ftn.fedex.com", 1, 15);
 
         MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
         service.runCheck();
@@ -67,14 +53,7 @@ class MonitorServiceTest {
         QueueHostChecker checker = new QueueHostChecker(false, false);
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
 
-        MonitorConfig config = MonitorConfig.of(
-                "jcswebt11.ftn.fedex.com",
-                443,
-                1000,
-                30,
-                3,
-                15
-        );
+        MonitorProperties config = testConfig("jcswebt11.ftn.fedex.com", 3, 15);
 
         MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
         service.runCheck();
@@ -88,14 +67,7 @@ class MonitorServiceTest {
         QueueHostChecker checker = new QueueHostChecker(false, false, false);
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
 
-        MonitorConfig config = MonitorConfig.of(
-                "jcswebt11.ftn.fedex.com",
-                443,
-                1000,
-                30,
-                2,
-                15
-        );
+        MonitorProperties config = testConfig("jcswebt11.ftn.fedex.com", 2, 15);
 
         MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
         service.runCheck();
@@ -109,14 +81,7 @@ class MonitorServiceTest {
         QueueHostChecker checker = new QueueHostChecker(false, false, false, false);
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
 
-        MonitorConfig config = MonitorConfig.of(
-                "jcswebt11.ftn.fedex.com",
-                443,
-                1000,
-                30,
-                2,
-                15
-        );
+        MonitorProperties config = testConfig("jcswebt11.ftn.fedex.com", 2, 15);
 
         MonitorService service = new MonitorService(config, clock, (h, p, t) -> checker);
 
@@ -195,5 +160,16 @@ class MonitorServiceTest {
             notifications++;
             lastMessage = message;
         }
+    }
+
+    private static MonitorProperties testConfig(String host, int failuresBeforeAlert, int cooldownMinutes) {
+        MonitorProperties properties = new MonitorProperties();
+        properties.setHost(host);
+        properties.setPort(443);
+        properties.setTimeoutMillis(1000);
+        properties.setIntervalSeconds(30);
+        properties.setFailuresBeforeAlert(failuresBeforeAlert);
+        properties.setAlertCooldownMinutes(cooldownMinutes);
+        return properties;
     }
 }

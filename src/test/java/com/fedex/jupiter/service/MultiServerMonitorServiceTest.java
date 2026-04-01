@@ -1,7 +1,7 @@
 package com.fedex.jupiter.service;
 
 import com.fedex.jupiter.alert.AlertNotifier;
-import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.config.MonitorProperties;
 import com.fedex.jupiter.validate.HostChecker;
 import org.junit.jupiter.api.Test;
 
@@ -42,14 +42,7 @@ class MultiServerMonitorServiceTest {
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
         RecordingNotifier notifier = new RecordingNotifier();
 
-        MonitorConfig config = MonitorConfig.of(
-                Arrays.asList(host1, host2, host3),
-                443,
-                1000,
-                30,
-                2,
-                15
-        );
+        MonitorProperties config = testConfig(Arrays.asList(host1, host2, host3), 2, 15);
 
         MonitorService service = new MonitorService(config, clock, notifier, (h, p, t) -> checker);
 
@@ -90,14 +83,7 @@ class MultiServerMonitorServiceTest {
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
         RecordingNotifier notifier = new RecordingNotifier();
 
-        MonitorConfig config = MonitorConfig.of(
-                Arrays.asList(host1, host2),
-                443,
-                1000,
-                30,
-                2,
-                15
-        );
+        MonitorProperties config = testConfig(Arrays.asList(host1, host2), 2, 15);
 
         MonitorService service = new MonitorService(config, clock, notifier, (h, p, t) -> checker);
 
@@ -139,14 +125,7 @@ class MultiServerMonitorServiceTest {
         MutableClock clock = new MutableClock(Instant.parse("2026-03-23T00:00:00Z"));
         RecordingNotifier notifier = new RecordingNotifier();
 
-        MonitorConfig config = MonitorConfig.of(
-                Arrays.asList(host1, host2),
-                443,
-                1000,
-                30,
-                1,  // Threshold is 1
-                15
-        );
+        MonitorProperties config = testConfig(Arrays.asList(host1, host2), 1, 15);
 
         MonitorService service = new MonitorService(config, clock, notifier, (h, p, t) -> checker);
 
@@ -172,7 +151,7 @@ class MultiServerMonitorServiceTest {
 
     @Test
     void handlesDefaultMultipleServersConfiguration() {
-        MonitorConfig config = MonitorConfig.fromEnv();
+        MonitorProperties config = new MonitorProperties();
 
         // Default config should have 3 hosts
         assertEquals(3, config.hosts().size());
@@ -236,6 +215,17 @@ class MultiServerMonitorServiceTest {
             notifications++;
             lastMessage = message;
         }
+    }
+
+    private static MonitorProperties testConfig(java.util.List<String> hosts, int failuresBeforeAlert, int cooldownMinutes) {
+        MonitorProperties properties = new MonitorProperties();
+        properties.setHost(String.join(",", hosts));
+        properties.setPort(443);
+        properties.setTimeoutMillis(1000);
+        properties.setIntervalSeconds(30);
+        properties.setFailuresBeforeAlert(failuresBeforeAlert);
+        properties.setAlertCooldownMinutes(cooldownMinutes);
+        return properties;
     }
 }
 

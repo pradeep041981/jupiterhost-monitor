@@ -2,7 +2,7 @@ package com.fedex.jupiter.service;
 
 import com.fedex.jupiter.alert.AlertNotifier;
 import com.fedex.jupiter.alert.smtp.SmtpEmailAlertNotifier;
-import com.fedex.jupiter.config.MonitorConfig;
+import com.fedex.jupiter.config.MonitorProperties;
 import com.fedex.jupiter.validate.HostChecker;
 import com.fedex.jupiter.validate.HostCheckerFactory;
 import com.fedex.jupiter.validate.TcpHostChecker;
@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MonitorService {
-    private final MonitorConfig config;
+    private final MonitorProperties config;
     private final Clock clock;
     private final AlertNotifier alertNotifier;
     private final HostCheckerFactory hostCheckerFactory;
@@ -21,19 +21,19 @@ public class MonitorService {
     private final Map<String, Integer> consecutiveFailures = new HashMap<>();
     private final Map<String, Instant> lastAlertAt = new HashMap<>();
 
-    public MonitorService(MonitorConfig config, Clock clock) {
+    public MonitorService(MonitorProperties config, Clock clock) {
         this(config, clock, new SmtpEmailAlertNotifier(config), TcpHostChecker::new);
     }
 
-    public MonitorService(MonitorConfig config, Clock clock, AlertNotifier alertNotifier) {
+    public MonitorService(MonitorProperties config, Clock clock, AlertNotifier alertNotifier) {
         this(config, clock, alertNotifier, TcpHostChecker::new);
     }
 
-    public MonitorService(MonitorConfig config, Clock clock, HostCheckerFactory hostCheckerFactory) {
+    public MonitorService(MonitorProperties config, Clock clock, HostCheckerFactory hostCheckerFactory) {
         this(config, clock, new SmtpEmailAlertNotifier(config), hostCheckerFactory);
     }
 
-    public MonitorService(MonitorConfig config, Clock clock, AlertNotifier alertNotifier, HostCheckerFactory hostCheckerFactory) {
+    public MonitorService(MonitorProperties config, Clock clock, AlertNotifier alertNotifier, HostCheckerFactory hostCheckerFactory) {
         this.config = config;
         this.clock = clock;
         this.alertNotifier = alertNotifier;
