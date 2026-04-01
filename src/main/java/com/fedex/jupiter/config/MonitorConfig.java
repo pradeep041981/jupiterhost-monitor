@@ -4,7 +4,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public final class MonitorConfig {
-    private static final String DEFAULT_HOST = "jcswebt110.ftn.fedex.com,jcswebt111.ftn.fedex.com,jcswebt112.ftn.fedex.com";
+    private static final String DEFAULT_HOST = "jcswebt11.ftn.fedex.com,jcswebt111.ftn.fedex.com,jcswebt112.ftn.fedex.com";
 
     private static final int DEFAULT_PORT = 443;
     private static final int DEFAULT_TIMEOUT_MILLIS = 3000;

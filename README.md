@@ -1,64 +1,161 @@
-# Host Monitor
+# Jupiter Host Monitor
 
-`jupiterhost-monitor` is a Java 17 service that probes a TCP host on a fixed interval and emits alerts when the host appears down.
+Java 17 service that checks TCP reachability for one or more hosts and sends alert notifications when a host is considered down.
 
-## Current behavior
+## Security Notice
 
-- Connectivity is checked with a TCP socket connect (`TcpHostChecker`).
-- A host-down alert is emitted only after `MONITOR_FAILURES_BEFORE_ALERT` consecutive failures.
-- After an alert is sent, additional alerts are suppressed for `MONITOR_ALERT_COOLDOWN_MINUTES`.
-- Console alerting is always enabled.
-- SMTP email alerting is optional and enabled only when all required SMTP credentials/addresses are present.
-- When SMTP is enabled, alerts are sent through a composite notifier so console alerts still run even if email sending fails.
+This project currently contains hardcoded fallback SMTP credentials and addresses in `MonitorConfig.fromEnv()` when related environment variables are missing.
 
-## Environment variables
+- Treat this as security debt.
+- Do not use these fallbacks in production.
+- Prefer secret-only injection through environment variables or a secret manager.
 
-### Monitoring settings
+## What It Does
+
+- Monitors one or more hosts on a configured TCP port.
+- Runs checks on a fixed schedule.
+- Tracks failure counters independently per host.
+- Sends alert after configured consecutive failures.
+- Suppresses repeated alerts during per-host cooldown.
+- Logs recovery when a previously failing host comes back up.
+
+## Architecture
+
+### Main components
+
+- `MonitorJupiterHostServer`
+  - Loads config from environment.
+  - Creates notifier and monitoring service.
+  - Schedules periodic checks using `ScheduledExecutorService`.
+- `MonitorConfig`
+  - Parses and normalizes environment variables.
+  - Exposes typed config values.
+  - Decides whether SMTP is enabled via `smtpEnabled()`.
+- `MonitorService`
+  - Runs host checks and state transitions.
+  - Stores in-memory state per host (`consecutiveFailures`, `lastAlertAt`).
+  - Applies threshold and cooldown logic before notifying.
+- `TcpHostChecker`
+  - Performs TCP socket connect probe with timeout.
+- `SmtpEmailAlertNotifier`
+  - Sends email with Jakarta Mail when SMTP is enabled.
+
+### Package map
+
+- `com.fedex.jupiter` - bootstrap and scheduling
+- `com.fedex.jupiter.config` - configuration
+- `com.fedex.jupiter.service` - monitoring logic
+- `com.fedex.jupiter.validate` - host-check abstractions and TCP implementation
+- `com.fedex.jupiter.alert` - notifier abstraction
+- `com.fedex.jupiter.alert.smtp` - SMTP notifier adapter
+
+## Monitoring Logic
+
+For each scheduled cycle:
+
+1. Loop through all configured hosts.
+2. Probe host reachability using TCP connect.
+3. If host is up:
+   - log recovery when failure count was non-zero,
+   - reset failure count to `0`.
+4. If host is down:
+   - increment failure count,
+   - if below threshold, stop.
+5. If threshold reached:
+   - enforce cooldown per host,
+   - send alert when cooldown has expired,
+   - update last-alert timestamp.
+
+State is in-memory only and resets on process restart.
+
+## Configuration
+
+Configuration is environment-variable driven (`MonitorConfig.fromEnv()`).
+
+### Monitoring variables
 
 | Variable | Default |
 |---|---|
-| `MONITOR_HOST` | `jcswebt110.ftn.fedex.com` |
+| `MONITOR_HOST` | `jcswebt11.ftn.fedex.com,jcswebt111.ftn.fedex.com,jcswebt112.ftn.fedex.com` |
 | `MONITOR_PORT` | `443` |
 | `MONITOR_TIMEOUT_MILLIS` | `3000` |
 | `MONITOR_INTERVAL_SECONDS` | `30` |
 | `MONITOR_FAILURES_BEFORE_ALERT` | `3` |
-| `MONITOR_ALERT_COOLDOWN_MINUTES` | `15` |
+| `MONITOR_ALERT_COOLDOWN_MINUTES` | `1` |
 
-Invalid values fall back to safe defaults; minimum bounds are enforced for timeout, interval, failures-before-alert, and cooldown.
+### SMTP variables
 
-### SMTP settings (optional)
-
-| Variable | Default / rule |
+| Variable | Default / behavior |
 |---|---|
 | `MONITOR_SMTP_HOST` | `smtp.gmail.com` |
 | `MONITOR_SMTP_PORT` | `587` |
 | `MONITOR_SMTP_STARTTLS` | `true` |
-| `MONITOR_SMTP_USERNAME` | required to enable SMTP |
-| `MONITOR_SMTP_PASSWORD` | required to enable SMTP |
-| `MONITOR_SMTP_FROM` | required to enable SMTP |
-| `MONITOR_SMTP_TO` | required to enable SMTP |
+| `MONITOR_SMTP_USERNAME` | Uses fallback value in source if unset |
+| `MONITOR_SMTP_PASSWORD` | Uses fallback value in source if unset |
+| `MONITOR_SMTP_FROM` | Uses fallback value in source if unset |
+| `MONITOR_SMTP_TO` | Uses fallback value in source if unset |
 
-`smtpEnabled()` requires all four credential/address values: username, password, from, and to.
+SMTP is enabled only when username, password, from, and to are all non-blank.
 
-## Build and test
+## Build and Run
+
+### Prerequisites
+
+- Java 17+
+- Maven 3.8+
+
+### Build and test
 
 ```powershell
 mvn test
 mvn package
 ```
 
-## Run
-
-After packaging, run the shaded jar:
+### Run packaged JAR
 
 ```powershell
 java -jar target\jupiterhost-monitor-1.0.jar
 ```
 
-Alternative (classes only):
+### Run with environment setup script
 
 ```powershell
-java -cp target\classes com.fedex.jupiter.MonitorJupiterHostServer
+. .\setEnv.ps1
+java -jar target\jupiterhost-monitor-1.0.jar
 ```
 
-At startup the app prints whether SMTP alerting is enabled. Alerts are always printed to console as `[ALERT] ...`.
+### Shutdown
+
+- Stop process with `Ctrl+C` (or process signal).
+- Shutdown hook calls `scheduler.shutdownNow()` and logs `Host monitor stopped.`
+
+## Testing
+
+Current unit tests cover:
+
+- single-host threshold alert behavior,
+- cooldown suppression,
+- alert timestamp updates,
+- multi-host independent counters and cooldown windows,
+- basic config accessors and SMTP enablement checks.
+
+Potential additions:
+
+- SMTP integration tests for transport failures/retries,
+- stronger config parsing edge-case tests,
+- long-running scheduler resiliency tests.
+
+## Operational Notes
+
+- Runtime model is a single JVM process.
+- Checks run serially per cycle.
+- No persistent state; restart resets counters and cooldown memory.
+- Observability is console logs plus SMTP alerts.
+
+## Known Risks and Next Improvements
+
+1. Remove hardcoded SMTP fallback credentials and enforce secrets-only configuration.
+2. Add pluggable notifiers (Webhook/Slack/PagerDuty).
+3. Add structured logging and metrics (`alerts_sent`, `checks_failed`, `cooldown_suppressed`).
+4. Consider state persistence if restart continuity is required.
+5. Add deployment assets (`Dockerfile`, health checks, runtime profiles).

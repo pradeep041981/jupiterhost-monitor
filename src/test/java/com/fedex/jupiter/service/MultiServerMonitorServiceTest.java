@@ -176,7 +176,8 @@ class MultiServerMonitorServiceTest {
 
         // Default config should have 3 hosts
         assertEquals(3, config.hosts().size());
-        assertEquals("jcswebt110.ftn.fedex.com", config.hosts().get(0));
+//        assertEquals("jcswebt110.ftn.fedex.com", config.hosts().get(0));
+        assertEquals("jcswebt11.ftn.fedex.com", config.hosts().get(0));
         assertEquals("jcswebt111.ftn.fedex.com", config.hosts().get(1));
         assertEquals("jcswebt112.ftn.fedex.com", config.hosts().get(2));
     }

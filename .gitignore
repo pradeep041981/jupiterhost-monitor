@@ -1,0 +1,18 @@
+# ignore target directory
+target/
+# ignore .idea directory
+.idea/
+# Ignore .vscode directory
+.vscode/
+# Ignore .DS_Store file (macOS)
+.DS_Store
+# Ignore log files
+*.log
+# Ignore compiled Java files
+*.class
+# Ignore build directories
+build/
+dist/
+out/
+# Ignore node_modules directory (if using Node.js)
+node_modules/
